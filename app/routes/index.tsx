@@ -1,3 +1,4 @@
+import { Alert, Card, Col, Row } from "react-bootstrap";
 import { Form, LoaderFunction, json, useLoaderData } from "remix";
 import RecipeList, { Recipe, recipeForClient } from "~/components/recipe-list";
 import { parseToInt } from "~/utils/parseString";
@@ -12,6 +13,14 @@ import {
 interface MainData {
   type: "main";
   recipes: Recipe[];
+}
+
+/**
+ * The data returned by the loader in case of any input validation errors
+ */
+interface ErrorData {
+  status: "error";
+  message: string;
 }
 
 /**
@@ -38,7 +47,10 @@ export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
 
   // The search query provided by the user
-  const search = url.searchParams.get("q");
+  const search = url.searchParams.get("q")!;
+
+  // The search query must  have 3 letters at least
+  const ThreeCharRule = /^[a-zA-Z]{3,}$/;
 
   // The page to show, starting from 0
   const page = parseToInt(url.searchParams.get("p") ?? "");
