@@ -24,6 +24,13 @@ interface ErrorData {
 }
 
 /**
+ * The data returned by the loader in case of any input validation errors
+ */
+
+
+
+
+/**
  * The data returned by the loader for searching by title
  */
 interface SearchData {
