@@ -1,114 +1,255 @@
 import { useState } from "react";
-import { ListGroup } from "react-bootstrap";
+import { Form, InputGroup } from "react-bootstrap";
+import {
+  Link,
+  LoaderFunction,
+  Form as RemixForm,
+  json,
+  useLoaderData,
+} from "remix";
+import RecipeList, { Recipe, recipeForClient } from "~/components/recipe-list";
+import { parseToInt } from "~/utils/parseString";
+import { searchRecipes } from "~/utils/spoonacular.server";
 
-export default function AdvancedSearch(): JSX.Element {
+/**
+ * The data (actually nothing) returned by the loader when not searched
+ */
+interface EmptyData {
+  status: "empty";
+}
+
+interface SearchData {
+  status: "search";
+  recipes: Recipe[];
+  currentPage: number;
+  totalPages: number;
+}
+
+/**
+ * The data returned by the loader in case of any input validation errors
+ */
+interface ErrorData {
+  status: "error";
+  message: string;
+}
+
+/**
+ * The aggregated data type that the loader returns
+ */
+type LoaderData = EmptyData | SearchData | ErrorData;
+
+/**
+ * Server-side function to load the data needed for the `/search` route
+ *
+ * We need to get the search results if the search form is submitted.
+ */
+export const loader: LoaderFunction = async ({ request }) => {
+  const { searchParams: params } = new URL(request.url);
+
+  // Parse all search filters
+  const title = params.get("title") ?? undefined;
+  const include = params.getAll("include").filter(Boolean);
+  const exclude = params.getAll("exclude").filter(Boolean);
+  const tools = params.getAll("tools").filter(Boolean);
+  const maxTime = parseToInt(params.get("maxTime") ?? "");
+  const page = parseToInt(params.get("p") ?? "");
+
+  // Whether there are any filters specified (i.e. the form is submitted)
+  const hasFilters = ["title", "include", "exclude", "tools", "maxTime"].some(
+    (key) => params.has(key),
+  );
+
+  // Don't do a search if there are no filters
+  if (!hasFilters) {
+    return json<EmptyData>({ status: "empty" });
+  }
+
+  // Whether the values for the filters are all empty
+  const filtersEmpty =
+    !title &&
+    !include.length &&
+    !exclude.length &&
+    !tools.length &&
+    maxTime <= 0;
+
+  // If the filters are all empty, this is a mal-formed request
+  if (filtersEmpty) {
+    return json<ErrorData>(
+      {
+        status: "error",
+        message: "At least one of the search filters should be specified.",
+      },
+      400,
+    );
+  }
+
+  // Now we can send the search request to the API endpoint
+  const NUM_RESULTS_PER_PAGE = 9;
+  const results = await searchRecipes({
+    title,
+    includedIngredients: include,
+    excludedIngredients: exclude,
+    tools,
+    maxTime,
+    number: NUM_RESULTS_PER_PAGE,
+    offset: page * NUM_RESULTS_PER_PAGE,
+  });
+  const totalPages = Math.ceil(results.totalResults / NUM_RESULTS_PER_PAGE);
+  const currentPage = results.offset / NUM_RESULTS_PER_PAGE;
+  return json<SearchData>({
+    status: "search",
+    totalPages,
+    currentPage,
+    recipes: results.results.map(recipeForClient),
+  });
+};
+
+/**
+ * The UI of this route
+ */
+export default function Search(): JSX.Element {
+  const data = useLoaderData<LoaderData>();
+  const includedIngredients: string[] = [];
+  const { status } = data;
+
   const [included, setIncluded] = useState("");
   const [excluded, setExcluded] = useState("");
+  const [cookingTools, setCookingTools] = useState("");
+  const [cookingTime, setCookingTime] = useState(0);
 
-  const addIncluded = (event) => {
-    event.preventDefault();
-    console.log(included);
-    console.log("include ingredient clicked");
-  };
+  const handleIncludedChange = (value) => setIncluded(value);
 
-  const removeIncluded = (event) => {
-    event.preventDefault();
-    console.log("include remove ingredient clicked");
-  };
-
-  const addExcluded = (event) => {
-    event.preventDefault();
-    console.log("exclude ingredient clicked");
-  };
-
-  const removeExcluded = (event) => {
-    event.preventDefault();
-    console.log("exclude remove ingredient clicked");
-  };
-
-  const savedFilters = (event) => {
-    event.preventDefault();
-    console.log("saved filters clicked");
-  };
+  const addIncluded = () => includedIngredients.push(included);
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button
-          className="advanced-search"
-          style={{ width: "8%" }}
-          onClick={savedFilters}
-        >
-          Saved filters
-        </button>
-      </div>
-      <div className="tools">
-        <h3>Ingredients</h3>
-        <div className="ingredients">
-          <div style={{ display: "flex", marginBottom: "1%" }}>
+    <div className="container">
+      {/* An example of how to set up the form */}
+      {/* Of course, don't follow this; this is a terrible example */}
+      <Form as={RemixForm} method="get">
+        <div className="Search-UI">
+          <div className="search">
             <input
               type="text"
-              id="text"
-              name="text"
-              value={included}
-              placeholder="Included Ingredients"
+              name="title"
+              id="searchQuery"
+              className="search-bar"
+              placeholder="Search for the recipe you want"
             />
-            <button className="searchbutton" onClick={addIncluded}>
-              +
-            </button>
-            <button className="searchbutton" onClick={removeIncluded}>
-              -
-            </button>
-          </div>
-          <div style={{ display: "flex", marginBottom: "1%" }}>
-            <input
-              type="text"
-              id="text"
-              name="text"
-              value={excluded}
-              placeholder="Excluded Ingredients"
-            />
-            <button className="searchbutton" onClick={addExcluded}>
-              +
-            </button>
-            <button className="searchbutton" onClick={removeExcluded}>
-              -
+            <button type="submit" className="searchbutton">
+              <svg
+                stroke="currentColor"
+                fill="currentColor"
+                strokeWidth="0"
+                viewBox="0 0 1024 1024"
+                height="1.5em"
+                width="1.5em"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M909.6 854.5L649.9 594.8C690.2 542.7 712 479 712 412c0-80.2-31.3-155.4-87.9-212.1-56.6-56.7-132-87.9-212.1-87.9s-155.5 31.3-212.1 87.9C143.2 256.5 112 331.8 112 412c0 80.1 31.3 155.5 87.9 212.1C256.5 680.8 331.8 712 412 712c67 0 130.6-21.8 182.7-62l259.7 259.6a8.2 8.2 0 0 0 11.6 0l43.6-43.5a8.2 8.2 0 0 0 0-11.6zM570.4 570.4C528 612.7 471.8 636 412 636s-116-23.3-158.4-65.6C211.3 528 188 471.8 188 412s23.3-116.1 65.6-158.4C296 211.3 352.2 188 412 188s116.1 23.2 158.4 65.6S636 352.2 636 412s-23.3 116.1-65.6 158.4z"></path>
+              </svg>
             </button>
           </div>
         </div>
-      </div>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            className="advanced-search"
+            style={{ width: "8%" }}
+          >
+            Saved filters
+          </button>
+        </div>
 
-      <div className="tools">
-        <h3>Tools</h3>
+        {status === "error" && (
+          <p className="alert alert-danger">{data.message}</p>
+        )}
+
         <div className="ingredients">
-          <div style={{ display: "flex", marginBottom: "1%" }}>
-            <input
-              type="text"
-              id="text"
-              name="text"
-              placeholder="Cooking Tools"
-            />
-            <button className="searchbutton" onClick={addIncluded}>
-              +
-            </button>
-            <button className="searchbutton" onClick={removeIncluded}>
-              -
-            </button>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <label htmlFor="time">Estimated Cooking Time</label>
-            <input
-              type="range"
-              id="time"
-              name="time"
-              min="0"
-              max="100"
-              defaultValue={"0"}
-              style={{ width: "10%" }}
-            />
-          </div>
+          <h3>Ingredients</h3>
+          {/* Included Ingredients UI */}
+          <Form.Group id="includedGroup">
+            <InputGroup className="mb-3">
+              <InputGroup.Text id="basic-addon1">
+                Included Ingredients
+              </InputGroup.Text>
+              <Form.Control
+                name="include"
+                placeholder="Ingredient"
+                aria-label="Ingredient"
+                aria-describedby="basic-addon1"
+                value={included}
+                onChange={(event) => handleIncludedChange(event.target.value)}
+              />
+              <button
+                type="button"
+                className="searchbutton"
+                onClick={addIncluded}
+              >
+                +
+              </button>
+              <button type="button" className="searchbutton">
+                -
+              </button>
+            </InputGroup>
+          </Form.Group>
+          {/* Excluded Ingredients UI */}
+          <Form.Group id="excludedGroup">
+            <InputGroup className="mb-3">
+              <InputGroup.Text id="basic-addon1">
+                Exclude Ingredients
+              </InputGroup.Text>
+              <Form.Control
+                placeholder="Ingredient"
+                name="exclude"
+                aria-label="Ingredient"
+                aria-describedby="basic-addon1"
+              />
+              <button type="button" className="searchbutton">
+                +
+              </button>
+              <button type="button" className="searchbutton">
+                -
+              </button>
+            </InputGroup>
+          </Form.Group>
         </div>
-      </div>
+        <div className="ingredients">
+          <h3>Ingredients</h3>
+          {/* Cooking tools UI */}
+          <Form.Group>
+            <InputGroup className="mb-3">
+              <InputGroup.Text id="basic-addon1">Cooking Tools</InputGroup.Text>
+              <Form.Control
+                placeholder="Cooking Tools"
+                aria-label="Ingredient"
+                aria-describedby="basic-addon1"
+              />
+              <button type="button" className="searchbutton">
+                +
+              </button>
+              <button type="button" className="searchbutton">
+                -
+              </button>
+            </InputGroup>
+            <Form.Label>Cooking Time: {cookingTime} minutes. </Form.Label>
+            <Form.Range
+              name="maxTime"
+              id="search-max-time"
+              step={1}
+              defaultValue={0}
+              min={0}
+              max={240}
+              onChange={(e) => setCookingTime(+e.target.value)}
+            />
+          </Form.Group>
+        </div>
+      </Form>
+
+      {process.env.NODE_ENV !== "production" && status === "search" && (
+        <Link to=".">Clear URL Search Params</Link>
+      )}
+
+      {status === "search" && <RecipeList recipes={data.recipes} />}
     </div>
   );
 }
