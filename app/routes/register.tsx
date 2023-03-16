@@ -57,13 +57,12 @@ export const action: ActionFunction = async ({ request }) => {
 /**
  * The React component for the UI of this page
  */
-
 export default function Registration(): JSX.Element {
   const data = useActionData<ActionData>();
 
   return (
     <div className="registration-form">
-        <form method="post" action="/register">
+      <form method="post" action="/register">
         <h3 style={{ textAlign: "center" }}>Registration</h3>
         <div className="form-group">
           <div className="form-group">
@@ -84,7 +83,7 @@ export default function Registration(): JSX.Element {
           </div>
         </div>
         <div className="form-group">
-        <div className="form-group">
+          <div className="form-group">
             <label htmlFor="email">Email address</label>
             <input
               name="email"
@@ -103,7 +102,7 @@ export default function Registration(): JSX.Element {
           </div>
         </div>
         <div className="form-group">
-        <div className="form-group">
+          <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
               name="password"
