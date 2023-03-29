@@ -1,7 +1,8 @@
 import bcrypt from "bcrypt";
 import { createCookieSessionStorage, redirect } from "remix";
 import getEnv from "~/config/env.server";
-import User, { UserData, UserDoc } from "~/models/User.server";
+import type { UserData, UserDoc } from "~/models/User.Server";
+import User from "~/models/User.Server";
 
 // ---------------------------- CONFIG VALUES ----------------------------------
 

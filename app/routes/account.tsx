@@ -1,5 +1,6 @@
 import { Button, Container, Image, ListGroup, Stack } from "react-bootstrap";
-import { LoaderFunction, json, useLoaderData } from "remix";
+import type { LoaderFunction } from "remix";
+import { json, useLoaderData } from "remix";
 import default_pfp from "~/images/blank_profile.png";
 import { requireUser } from "~/utils/auth.server";
 
@@ -97,6 +98,11 @@ export default function Profile() {
         <Button variant="primary" href="/myReviews">
           Reviews
         </Button>
+        <form action="/logout" method="post">
+          <Button variant="primary" type="submit" className="button">
+            Logout
+          </Button>
+        </form>
       </ListGroup>
     </Stack>
   );

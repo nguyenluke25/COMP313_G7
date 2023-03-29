@@ -1,8 +1,10 @@
-import { ActionFunction, json, useActionData } from "remix";
-import User, { UserData } from "~/models/User.server";
+import type { ActionFunction } from "remix";
+import { json, useActionData } from "remix";
+import type { UserData } from "~/models/User.Server";
+import User from "~/models/User.Server";
 import { createSessionAndRedirect, register } from "~/utils/auth.server";
+import type { FieldValidationResult } from "~/utils/inputValidation";
 import {
-  FieldValidationResult,
   optional,
   validateEmail,
   validatePassword,
