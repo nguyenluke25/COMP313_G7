@@ -1,13 +1,9 @@
 import { useState } from "react";
 import { Form, InputGroup } from "react-bootstrap";
-import {
-  Link,
-  LoaderFunction,
-  Form as RemixForm,
-  json,
-  useLoaderData,
-} from "remix";
-import RecipeList, { Recipe, recipeForClient } from "~/components/recipe-list";
+import type { LoaderFunction } from "remix";
+import { Link, Form as RemixForm, json, useLoaderData } from "remix";
+import type { Recipe } from "~/components/recipe-list";
+import RecipeList, { recipeForClient } from "~/components/recipe-list";
 import { parseToInt } from "~/utils/parseString";
 import { searchRecipes } from "~/utils/spoonacular.server";
 
@@ -66,14 +62,12 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   // Whether the values for the filters are all empty
   const filtersEmpty =
-    !title &&
-    !include.length &&
-    !exclude.length &&
-    !tools.length &&
-    maxTime <= 0;
+    include?.length || exclude?.length || tools?.length || maxTime > 0;
+
+  console.log("empty? ", filtersEmpty);
 
   // If the filters are all empty, this is a mal-formed request
-  if (filtersEmpty) {
+  if (!filtersEmpty) {
     return json<ErrorData>(
       {
         status: "error",
@@ -220,6 +214,7 @@ export default function Search(): JSX.Element {
             <InputGroup className="mb-3">
               <InputGroup.Text id="basic-addon1">Cooking Tools</InputGroup.Text>
               <Form.Control
+                name="tools"
                 placeholder="Cooking Tools"
                 aria-label="Ingredient"
                 aria-describedby="basic-addon1"
