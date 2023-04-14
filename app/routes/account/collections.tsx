@@ -1,8 +1,7 @@
-import { Button, Col, Nav, Row } from "react-bootstrap";
+import { Button, Card, Col, Nav, Row } from "react-bootstrap";
+import type { ActionFunction, LoaderFunction } from "remix";
 import {
-  ActionFunction,
   Form,
-  LoaderFunction,
   NavLink,
   Outlet,
   json,
@@ -13,10 +12,8 @@ import {
 } from "remix";
 import Collection from "~/models/Collection.server";
 import { requireUser } from "~/utils/auth.server";
-import {
-  FieldValidationResult,
-  validateNonEmpty,
-} from "~/utils/inputValidation";
+import type { FieldValidationResult } from "~/utils/inputValidation";
+import { validateNonEmpty } from "~/utils/inputValidation";
 
 /**
  * Server-side handler of GET requests
@@ -148,10 +145,9 @@ export default function Collections(): JSX.Element {
         <fieldset disabled={isLoading}>
           <div className="input-group mb-3">
             <input type="hidden" name="type" value="add" />
-            <label htmlFor="new-name" className="form-label">
+            <label htmlFor="new-name" className="form-label me-3">
               Collection Name:
             </label>
-            <br></br>
             <input
               type="text"
               name="name"
@@ -201,6 +197,7 @@ export default function Collections(): JSX.Element {
         </Col>
         <Col sm={9}>
           <Outlet />
+          {/* Demo for how the recipes inside the collection pages are supposed to look like */}
         </Col>
       </Row>
     </>
