@@ -1,5 +1,7 @@
-import { Form, LoaderFunction, json, useLoaderData } from "remix";
-import RecipeList, { Recipe, recipeForClient } from "~/components/recipe-list";
+import type { LoaderFunction } from "remix";
+import { Form, json, useLoaderData } from "remix";
+import type { Recipe } from "~/components/recipe-list";
+import RecipeList, { recipeForClient } from "~/components/recipe-list";
 import { validateMinLength } from "~/utils/inputValidation";
 import { parseToInt } from "~/utils/parseString";
 import {
@@ -117,6 +119,7 @@ export default function Index() {
                 aria-describedby={
                   data.status === "error" ? "search-error" : undefined
                 }
+                required
               />
               <button type="submit" className="searchbutton">
                 <svg
